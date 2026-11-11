@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scene Speak & Write - 영어 상황 묘사 훈련</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --border: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      padding: 24px 16px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .badge {
+      background: var(--border);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Scene Display Area */
+    .scene-box {
+      border-radius: 8px;
+      background: #0b1120;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .scene-svg {
+      width: 100%;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #1e293b;
+    }
+
+    .scene-meta {
+      padding: 14px 16px;
+      background: #131d2e;
+    }
+
+    .scene-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .scene-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    /* Target Keywords & Hints */
+    .hints-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #111a2e;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+    }
+
+    .hints-panel strong {
+      font-size: 0.85rem;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .keywords-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .keyword-chip {
+      background: #1e293b;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+
+    .keyword-chip.matched {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: var(--accent);
+      color: #86efac;
+      font-weight: 600;
+    }
+
+    /* Input Controls */
+    .input-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 6px;
+      padding: 8px 14px;
+      border: none;
+      transition: background 0.15s, transform 0.05s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #04101f;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-mic {
+      background: #334155;
+      color: var(--text-main);
+    }
+
+    .btn-mic.recording {
+      background: var(--danger);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .btn-outline:hover {
+      background: var(--border);
+      color: var(--text-main);
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 12px;
+      background: #0b1120;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      line-height: 1.5;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    textarea:focus {
+      outline: 2px solid var(--primary);
+      border-color: transparent;
+    }
+
+    /* Feedback & Evaluation */
+    .feedback-box {
+      border-radius: 8px;
+      background: #111a2e;
+      border: 1px solid var(--border);
+      padding: 16px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .feedback-box.visible {
+      display: flex;
+    }
+
+    .metric-row {
+      display: flex;
+      gap: 16px;
+      font-size: 0.9rem;
+    }
+
+    .metric {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .model-answer {
+      background: rgba(56, 189, 248, 0.08);
+      border-left: 3px solid var(--primary);
+      padding: 10px 14px;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.95rem;
+    }
+
+    .model-answer strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--primary);
+      font-size: 0.85rem;
+    }
+
+    .tts-btn {
+      padding: 2px 6px;
+      font-size: 0.75rem;
+      border-radius: 4px;
+      background: var(--border);
+      color: var(--text-main);
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Describe the Scene</h1>
+    <span class="badge" id="sceneIndicator">Card 1 / 4</span>
+  </header>
+
+  <div class="card">
+    <div class="scene-box">
+      <div class="scene-svg" id="sceneGraphic"></div>
+      <div class="scene-meta">
+        <h2 class="scene-title" id="sceneTitle">Loading...</h2>
+        <p class="scene-desc" id="sceneContext">Loading...</p>
+      </div>
+    </div>
+
+    <div class="hints-panel">
+      <strong>Target Vocabulary / Keywords to include:</strong>
+      <div class="keywords-list" id="keywordsContainer"></div>
+    </div>
+
+    <div class="input-section">
+      <div class="toolbar">
+        <div class="btn-group">
+          <button id="micBtn" class="btn-mic" type="button">
+            🎤 Speak (STT)
+          </button>
+          <button id="clearBtn" class="btn-outline" type="button">Clear</button>
+        </div>
+        <button id="checkBtn" class="btn-primary" type="button">Check & Evaluate</button>
+      </div>
+
+      <textarea id="userInput" placeholder="영어로 이 상황을 묘사해보세요. 마이크를 눌러 말하거나 직접 타이핑할 수 있습니다..."></textarea>
+    </div>
+
+    <div class="feedback-box" id="feedbackBox">
+      <div class="metric-row">
+        <div class="metric"><strong>Word Count:</strong> <span id="wordCount">0</span></div>
+        <div class="metric"><strong>Keyword Match:</strong> <span id="keywordMatch">0 / 0</span></div>
+      </div>
+
+      <div class="model-answer">
+        <strong>Model Answer (모범 답안)</strong>
+        <p id="modelAnswerText"></p>
+        <button id="listenModelBtn" class="tts-btn" style="margin-top: 8px;">🔊 Listen to Answer</button>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+        <button id="nextBtn" class="btn-outline">Next Scene ➔</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const scenes = [
+    {
+      title: "Cozy Café on a Rainy Afternoon",
+      context: "비 오는 날, 카페 창가에서 한 사람이 따뜻한 음료를 마시며 책을 읽고 있는 모습입니다.",
+      keywords: ["rain", "window", "coffee", "reading", "umbrella"],
+      model: "A person is sitting by the window in a cozy café on a rainy day, drinking coffee and reading an interesting book.",
+      svg: `
+        <svg viewBox="0 0 400 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <rect width="400" height="200" fill="#1e293b"/>
+          <rect x="50" y="30" width="120" height="130" rx="6" fill="#334155" stroke="#475569" stroke-width="3"/>
+          <line x1="110" y1="30" x2="110" y2="160" stroke="#475569" stroke-width="2"/>
+          <line x1="50" y1="95" x2="170" y2="95" stroke="#475569" stroke-width="2"/>
+          <line x1="70" y1="45" x2="60" y2="65" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+          <line x1="130" y1="50" x2="120" y2="70" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+          <line x1="90" y1="110" x2="80" y2="130" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+          <rect x="230" y="110" width="100" height="50" rx="4" fill="#64748b"/>
+          <circle cx="210" cy="115" r="16" fill="#f8fafc"/>
+          <rect x="200" y="131" width="20" height="30" rx="3" fill="#3b82f6"/>
+          <rect x="250" y="98" width="16" height="14" rx="2" fill="#e2e8f0"/>
+          <path d="M266 102 C 270 102, 270 108, 266 108" fill="none" stroke="#e2e8f0" stroke-width="2"/>
+        </svg>
+      `
+    },
+    {
+      title: "Lost Tourist at the Crossroad",
+      context: "여행자가 배낭을 메고 교차로에 서서 지도를 확인하며 길을 찾고 있습니다.",
+      keywords: ["tourist", "backpack", "map", "street", "direction"],
+      model: "A tourist carrying a heavy backpack is standing on a busy street corner, looking closely at a map to find directions.",
+      svg: `
+        <svg viewBox="0 0 400 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <rect width="400" height="200" fill="#1e293b"/>
+          <line x1="0" y1="170" x2="400" y2="170" stroke="#475569" stroke-width="4"/>
+          <rect x="300" y="60" width="10" height="110" fill="#94a3b8"/>
+          <rect x="280" y="60" width="50" height="20" rx="3" fill="#38bdf8"/>
+          <circle cx="160" cy="95" r="14" fill="#f8fafc"/>
+          <rect x="150" y="109" width="20" height="35" rx="3" fill="#10b981"/>
+          <rect x="140" y="112" width="10" height="22" rx="3" fill="#f59e0b"/>
+          <polygon points="170,120 190,115 195,135 175,138" fill="#e2e8f0"/>
+        </svg>
+      `
+    },
+    {
+      title: "Preparing Dinner in the Kitchen",
+      context: "도마 위에 채소를 올려두고 칼로 썰며 저녁을 요리하는 주방 모습입니다.",
+      keywords: ["cooking", "kitchen", "vegetables", "knife", "dinner"],
+      model: "Someone is cooking dinner in the kitchen by chopping fresh vegetables on a wooden cutting board with a sharp knife.",
+      svg: `
+        <svg viewBox="0 0 400 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <rect width="400" height="200" fill="#1e293b"/>
+          <rect x="50" y="120" width="300" height="50" rx="4" fill="#475569"/>
+          <rect x="120" y="110" width="90" height="14" rx="2" fill="#d97706"/>
+          <circle cx="145" cy="104" r="8" fill="#ef4444"/>
+          <circle cx="165" cy="106" r="7" fill="#22c55e"/>
+          <rect x="230" y="90" width="36" height="30" rx="3" fill="#94a3b8"/>
+          <line x1="225" y1="95" x2="230" y2="95" stroke="#64748b" stroke-width="3"/>
+          <line x1="266" y1="95" x2="271" y2="95" stroke="#64748b" stroke-width="3"/>
+        </svg>
+      `
+    },
+    {
+      title: "Morning Jog in the Park",
+      context: "맑은 아침, 강아지와 함께 공원 잔디밭 길을 따라 조깅하고 있는 모습입니다.",
+      keywords: ["jogging", "dog", "park", "morning", "running"],
+      model: "A runner is jogging along a park trail on a bright morning with an energetic dog running beside them.",
+      svg: `
+        <svg viewBox="0 0 400 200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <rect width="400" height="200" fill="#1e293b"/>
+          <path d="M 0 170 Q 150 140 400 170" stroke="#10b981" stroke-width="6" fill="none"/>
+          <circle cx="170" cy="85" r="13" fill="#f8fafc"/>
+          <rect x="162" y="98" width="16" height="30" rx="3" fill="#ef4444"/>
+          <line x1="164" y1="128" x2="155" y2="155" stroke="#f8fafc" stroke-width="4"/>
+          <line x1="176" y1="128" x2="185" y2="152" stroke="#f8fafc" stroke-width="4"/>
+          <rect x="215" y="135" width="24" height="14" rx="4" fill="#d97706"/>
+          <circle cx="242" cy="132" r="7" fill="#d97706"/>
+        </svg>
+      `
+    }
+  ];
+
+  let currentIndex = 0;
+  let recognition = null;
+  let isRecording = false;
+
+  const sceneIndicator = document.getElementById("sceneIndicator");
+  const sceneGraphic = document.getElementById("sceneGraphic");
+  const sceneTitle = document.getElementById("sceneTitle");
+  const sceneContext = document.getElementById("sceneContext");
+  const keywordsContainer = document.getElementById("keywordsContainer");
+  const userInput = document.getElementById("userInput");
+  const micBtn = document.getElementById("micBtn");
+  const clearBtn = document.getElementById("clearBtn");
+  const checkBtn = document.getElementById("checkBtn");
+  const feedbackBox = document.getElementById("feedbackBox");
+  const wordCount = document.getElementById("wordCount");
+  const keywordMatch = document.getElementById("keywordMatch");
+  const modelAnswerText = document.getElementById("modelAnswerText");
+  const listenModelBtn = document.getElementById("listenModelBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  // Load Scene Data
+  function loadScene(index) {
+    const scene = scenes[index];
+    sceneIndicator.textContent = `Card ${index + 1} / ${scenes.length}`;
+    sceneGraphic.innerHTML = scene.svg;
+    sceneTitle.textContent = scene.title;
+    sceneContext.textContent = scene.context;
+    modelAnswerText.textContent = scene.model;
+
+    // Reset Keywords
+    keywordsContainer.innerHTML = "";
+    scene.keywords.forEach(word => {
+      const chip = document.createElement("span");
+      chip.className = "keyword-chip";
+      chip.textContent = `#${word}`;
+      chip.dataset.keyword = word.toLowerCase();
+      keywordsContainer.appendChild(chip);
+    });
+
+    // Reset User Input & Feedback
+    userInput.value = "";
+    feedbackBox.classList.remove("visible");
+  }
+
+  // Update Keyword Chips highlighting dynamically
+  function updateKeywordHighlight() {
+    const currentScene = scenes[currentIndex];
+    const text = userInput.value.toLowerCase();
+    const chips = keywordsContainer.querySelectorAll(".keyword-chip");
+    
+    let matchedCount = 0;
+    chips.forEach(chip => {
+      const kw = chip.dataset.keyword;
+      if (text.includes(kw)) {
+        chip.classList.add("matched");
+        matchedCount++;
+      } else {
+        chip.classList.remove("matched");
+      }
+    });
+
+    return matchedCount;
+  }
+
+  userInput.addEventListener("input", updateKeywordHighlight);
+
+  // Evaluate Input
+  checkBtn.addEventListener("click", () => {
+    const text = userInput.value.trim();
+    const words = text ? text.split(/\s+/).length : 0;
+    const currentKeywords = scenes[currentIndex].keywords;
+    const matchedCount = updateKeywordHighlight();
+
+    wordCount.textContent = `${words} words`;
+    keywordMatch.textContent = `${matchedCount} / ${currentKeywords.length} used`;
+
+    feedbackBox.classList.add("visible");
+  });
+
+  // Clear Input
+  clearBtn.addEventListener("click", () => {
+    userInput.value = "";
+    updateKeywordHighlight();
+    feedbackBox.classList.remove("visible");
+  });
+
+  // Next Scene
+  nextBtn.addEventListener("click", () => {
+    currentIndex = (currentIndex + 1) % scenes.length;
+    loadScene(currentIndex);
+  });
+
+  // Speech Recognition (Web Speech API)
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event) => {
+      let finalTranscript = "";
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + " ";
+        }
+      }
+      if (finalTranscript) {
+        userInput.value += (userInput.value ? " " : "") + finalTranscript.trim();
+        updateKeywordHighlight();
+      }
+    };
+
+    recognition.onerror = (e) => {
+      console.warn("STT Error:", e.error);
+      stopRecording();
+    };
+
+    recognition.onend = () => {
+      stopRecording();
+    };
+
+    function startRecording() {
+      try {
+        recognition.start();
+        isRecording = true;
+        micBtn.classList.add("recording");
+        micBtn.textContent = "⏹ Stop Recording";
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function stopRecording() {
+      if (isRecording) {
+        recognition.stop();
+        isRecording = false;
+        micBtn.classList.remove("recording");
+        micBtn.textContent = "🎤 Speak (STT)";
+      }
+    }
+
+    micBtn.addEventListener("click", () => {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    });
+  } else {
+    micBtn.disabled = true;
+    micBtn.title = "이 브라우저는 음성 인식을 지원하지 않습니다. (Chrome 권장)";
+    micBtn.textContent = "🎤 STT Not Supported";
+  }
+
+  // TTS (Text-to-Speech) for Model Answer
+  listenModelBtn.addEventListener("click", () => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(scenes[currentIndex].model);
+      utterance.lang = "en-US";
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert("이 브라우저는 음성 합성을 지원하지 않습니다.");
+    }
+  });
+
+  // Initialize
+  loadScene(currentIndex);
+</script>
+</body>
+</html>
